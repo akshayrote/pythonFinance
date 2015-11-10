@@ -80,7 +80,7 @@ buf4.write('~~')
 buf4.write('Ambit Capital Quantitative Desk')
 
 sender = "roteakshay9@gmail.com"
-recipients = ['akshay.rote@gmail.com', 'akshayrote@ambitcapital.com']
+recipients = ['akshay.rote@gmail.com']
 msg = MIMEMultipart('alternative')
 msg['Subject'] = "Price Volume Calls for " + time.strftime("%c")
 msg['From'] = sender

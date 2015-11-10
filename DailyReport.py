@@ -6,21 +6,24 @@ Created on Mon Nov 09 11:40:35 2015
 """
 import numpy as np
 import pandas as pd
-import smtplib
 import time
 
 #Day 1 CM Bhavcopy
-cmday1 = pd.read_csv('cm05NOV2015bhav.csv', index_col=False, 
+cmday1 = pd.read_csv('cm09NOV2015bhav.csv', index_col=False, 
                   names=['SYMBOL','SERIES','OPEN','HIGH','LOW','CLOSE','LAST','PREVCLOSE','TOTTRDQTY','TOTTRDVAL','TIMESTAMP','TOTALTRADES','ISIN'], 
                 header=0)
 
 #Day 2 CM Bhavcopy
-cmday2 = pd.read_csv('cm06NOV2015bhav.csv', index_col=False, 
+cmday2 = pd.read_csv('cm10NOV2015bhav.csv', index_col=False, 
                   names=['SYMBOL','SERIES','OPEN','HIGH','LOW','CLOSE','LAST','PREVCLOSE','TOTTRDQTY','TOTTRDVAL','TIMESTAMP','TOTALTRADES','ISIN'], 
                 header=0)                
 
+#Day 1 FO bhavcopy
+foday1= pd.read_csv('fo09NOV2015bhav.csv', index_col=False, 
+                  names=['INSTRUMENT','SYMBOL','EXPIRY_DT','STRIKE_PR','OPTION_TYP','OPEN','HIGH','LOW','CLOSE','SETTLE_PR','CONTRACTS','VAL_INLAKH','OPEN_INT','CHG_IN_OI','TIMESTAMP'],
+                header=0)
 #Day 2 FO bhavcopy
-foday2= pd.read_csv('fo06NOV2015bhav.csv', index_col=False, 
+foday2= pd.read_csv('fo10NOV2015bhav.csv', index_col=False, 
                   names=['INSTRUMENT','SYMBOL','EXPIRY_DT','STRIKE_PR','OPTION_TYP','OPEN','HIGH','LOW','CLOSE','SETTLE_PR','CONTRACTS','VAL_INLAKH','OPEN_INT','CHG_IN_OI','TIMESTAMP'],
                 header=0)
 
@@ -86,11 +89,16 @@ voldwpriceup= mergecm[mergecm['Volume Decision DOWN'].isin(['Volume Decrease 2.5
 voldwpricedw= mergecm[mergecm['Volume Decision DOWN'].isin(['Volume Decrease 2.5X']) & mergecm['Price Decision DOWN'].isin(['Price Decrease 5%'])] 
 
 #Scrips with Most % change in Prices
-mergecm['Change']=((mergecm.CLOSE_day2 - mergecm.CLOSE_day1)/mergecm.CLOSE_day1)*100
-priceshocker = mergecm.sort(['Change'], ascending=False).head(n=5)
+#Taking only kind of blue chips so cm day1 cm day 2 fo day2
+mergecmcmf = pd.merge(cmday1, mergecmf, how='outer', on=['SYMBOL'],suffixes=('_day1cm', ''))
+mergecmcmf = mergecmcmf[(mergecmcmf.SERIES_day1cm == 'EQ')]
+mergecmcmf = mergecmcmf[(mergecmcmf.SERIES_day1cm == 'EQ')]
+mergecmcmf = mergecmcmf[mergecmcmf.EXPIRY_DT == '26-Nov-2015']
+mergecmcmf['Close Change %']=((mergecmcmf.CLOSE_day2cm - mergecmcmf.CLOSE)/mergecmcmf.CLOSE)*100
+priceshocker = mergecmcmf.sort(['Close Change %'], ascending=False).head(n=5)
 
 #Scrips with Highest Traded Value/Turnover/Most Active
-mostactive = mergecm.sort(['TOTTRDVAL_day2'], ascending=False).head(n=5)
+mostactive = mergecmcmf.sort(['TOTTRDVAL'], ascending=False).head(n=5)
 
 vuputext = "Price Up–Volume Up. In uptrends Bullish Scrips with support & In a down trend this signals a possible correction or change in the trend’s short term direction to upwards"
 vupusym = voluppriceup[['SYMBOL','SERIES']].to_string()
@@ -104,31 +112,47 @@ vdpusym = voldwpriceup[['SYMBOL','SERIES']].to_string()
 vdpdtext = "Price Down–Volume Down. Suggests a continuation of the main down trend, or a pull back and possible continuation of an uptrend"
 vdpdsym = voldwpricedw[['SYMBOL','SERIES']].to_string()
 
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEText import MIMEText
+from email.MIMEImage import MIMEImage
 
-sender = "roteakshay9@gmail.com"
-recipients = ['akshay.rote@gmail.com']
-msg = MIMEMultipart('alternative')
-msg['Subject'] = "Cash Future Arbitrage Calls " + time.strftime("%c")
-msg['From'] = sender
-msg['To'] = ", ".join(recipients)
+# Define these once; use them twice!
+strFrom = 'roteakshay9@gmail.com'
+strTo = 'akshay.rote@gmail.com'
 
-text = "Hi!\nHow are you?\nHere is the link you wanted:\nhttps://www.python.org"
-html = cfarbnear[['SYMBOL','ARBITRAGE BASIS %']].to_html()
+# Create the root message and fill in the from, to, and subject headers
+msgRoot = MIMEMultipart('related')
+msgRoot['Subject'] = "Ambit Python Robot " + time.strftime("%X")
+msgRoot['From'] = strFrom
+msgRoot['To'] = strTo
+msgRoot.preamble = 'This is a multi-part message in MIME format.'
 
-part1 = MIMEText(html, 'plain')
-part2 = MIMEText(html, 'html')
+# Encapsulate the plain and HTML versions of the message body in an
+# 'alternative' part, so message agents can decide which they want to display.
+msgAlternative = MIMEMultipart('related')
+msgRoot.attach(msgAlternative)
 
-msg.attach(part1)
-msg.attach(part2)
+priceshockerhtml = priceshocker[['SYMBOL','Close Change %']].to_html()
+mostactivehtml = mostactive[['SYMBOL','TOTTRDVAL']].to_html()
+cfarbnearhtml = cfarbnear[['SYMBOL','ARBITRAGE BASIS %']].to_html()
+# We reference the image in the IMG SRC attribute by the ID we give it below
+msgText = MIMEText('<b>Price Shockers for Today</b></br></br>'+ priceshockerhtml +'</br><b>Most Active Stocks for Today</b></br></br>' + mostactivehtml +'</br><b>Cash Future Arbitrage</b></br> Buy in Cash and Short in Future (Over & Above Rf=7%) </br></br>' + cfarbnearhtml +'<br><img src="cid:image1">', 'html')
+msgAlternative.attach(msgText)
 
-username = 'roteakshay9@gmail.com'
-password = '****'
-server = smtplib.SMTP('smtp.gmail.com:587')
-server.ehlo()
-server.starttls()
-server.login(username,password)
-server.sendmail(sender, recipients, msg.as_string())
-server.quit()        
+fp = open('ambit.jpg', 'rb')
+msgImage = MIMEImage(fp.read())
+fp.close()
+
+# Define the image's ID as referenced above
+msgImage.add_header('Content-ID', '<image1>')
+msgRoot.attach(msgImage)
+# Send the email (this example assumes SMTP authentication is required)
+import smtplib
+smtp = smtplib.SMTP()
+smtp.connect('smtp.gmail.com:587')
+smtp.ehlo()
+smtp.starttls()
+smtp.login('roteakshay9@gmail.com', '****')
+smtp.sendmail(strFrom, strTo, msgRoot.as_string())
+smtp.quit()
 print("Success")
