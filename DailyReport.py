@@ -7,23 +7,53 @@ Created on Mon Nov 09 11:40:35 2015
 import numpy as np
 import pandas as pd
 import time
+from datetime import datetime
+
+
+if time.strftime("%X") >= "17:00:00":
+    part3cmday1 = datetime.today().day - 1
+    part3cmday2 = datetime.today().day    
+    part3foday1 = datetime.today().day - 1
+    part3foday2 = datetime.today().day
+else:
+    part3cmday1 = datetime.today().day - 2
+    part3cmday2 = datetime.today().day - 1   
+    part3foday1 = datetime.today().day - 2
+    part3foday2 = datetime.today().day - 1
+
+part3cmday1 = str(part3cmday1) 
+part3cmday2 = str(part3cmday2)
+part2cm = time.strftime("cm") 
+part4cm = time.strftime("%b").upper()
+part5cm = time.strftime("%Ybhav.csv")
+
+part3foday1 = str(part3foday1)
+part3foday2 = str(part3foday2)
+part2fo = time.strftime("fo") 
+part4fo = time.strftime("%b").upper()
+part5fo = time.strftime("%Ybhav.csv")
+
+filenamecmday1 = part2cm+part3cmday1+part4cm+part5cm
+filenamecmday2 = part2cm+part3cmday2+part4cm+part5cm
+filenamefoday1 = part2fo+part3foday1+part4fo+part5fo
+filenamefoday2 = part2fo+part3foday2+part4fo+part5fo
 
 #Day 1 CM Bhavcopy
-cmday1 = pd.read_csv('cm09NOV2015bhav.csv', index_col=False, 
+cmday1 = pd.read_csv(filenamecmday1, index_col=False, 
                   names=['SYMBOL','SERIES','OPEN','HIGH','LOW','CLOSE','LAST','PREVCLOSE','TOTTRDQTY','TOTTRDVAL','TIMESTAMP','TOTALTRADES','ISIN'], 
                 header=0)
 
 #Day 2 CM Bhavcopy
-cmday2 = pd.read_csv('cm10NOV2015bhav.csv', index_col=False, 
+cmday2 = pd.read_csv(filenamecmday2, index_col=False, 
                   names=['SYMBOL','SERIES','OPEN','HIGH','LOW','CLOSE','LAST','PREVCLOSE','TOTTRDQTY','TOTTRDVAL','TIMESTAMP','TOTALTRADES','ISIN'], 
                 header=0)                
 
 #Day 1 FO bhavcopy
-foday1= pd.read_csv('fo09NOV2015bhav.csv', index_col=False, 
+foday1= pd.read_csv(filenamefoday1, index_col=False, 
                   names=['INSTRUMENT','SYMBOL','EXPIRY_DT','STRIKE_PR','OPTION_TYP','OPEN','HIGH','LOW','CLOSE','SETTLE_PR','CONTRACTS','VAL_INLAKH','OPEN_INT','CHG_IN_OI','TIMESTAMP'],
                 header=0)
 #Day 2 FO bhavcopy
-foday2= pd.read_csv('fo10NOV2015bhav.csv', index_col=False, 
+foday2= pd.read_csv(filenamefoday2, index_col=False, 
                   names=['INSTRUMENT','SYMBOL','EXPIRY_DT','STRIKE_PR','OPTION_TYP','OPEN','HIGH','LOW','CLOSE','SETTLE_PR','CONTRACTS','VAL_INLAKH','OPEN_INT','CHG_IN_OI','TIMESTAMP'],
                 header=0)
 
@@ -122,7 +152,7 @@ strTo = 'akshay.rote@gmail.com'
 
 # Create the root message and fill in the from, to, and subject headers
 msgRoot = MIMEMultipart('related')
-msgRoot['Subject'] = "Ambit Python Robot " + time.strftime("%X")
+msgRoot['Subject'] = "Ambit Python Robot " + time.strftime("%c")
 msgRoot['From'] = strFrom
 msgRoot['To'] = strTo
 msgRoot.preamble = 'This is a multi-part message in MIME format.'
@@ -134,7 +164,7 @@ msgRoot.attach(msgAlternative)
 
 priceshockerhtml = priceshocker[['SYMBOL','Close Change %']].to_html()
 mostactivehtml = mostactive[['SYMBOL','TOTTRDVAL']].to_html()
-cfarbnearhtml = cfarbnear[['SYMBOL','ARBITRAGE BASIS %']].to_html()
+cfarbnearhtml = cfarbnear[['SYMBOL','CLOSE_day2cm','INSTRUMENT','CLOSE_day2fo','ARBITRAGE BASIS %']].to_html()
 # We reference the image in the IMG SRC attribute by the ID we give it below
 msgText = MIMEText('<b>Price Shockers for Today</b></br></br>'+ priceshockerhtml +'</br><b>Most Active Stocks for Today</b></br></br>' + mostactivehtml +'</br><b>Cash Future Arbitrage</b></br> Buy in Cash and Short in Future (Over & Above Rf=7%) </br></br>' + cfarbnearhtml +'<br><img src="cid:image1">', 'html')
 msgAlternative.attach(msgText)
@@ -152,7 +182,7 @@ smtp = smtplib.SMTP()
 smtp.connect('smtp.gmail.com:587')
 smtp.ehlo()
 smtp.starttls()
-smtp.login('roteakshay9@gmail.com', '****')
+smtp.login('roteakshay9@gmail.com', '*****')
 smtp.sendmail(strFrom, strTo, msgRoot.as_string())
 smtp.quit()
 print("Success")
